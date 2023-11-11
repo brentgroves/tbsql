@@ -1,0 +1,115 @@
+{
+	"folders": {},
+	"connections": {
+		"microsoft-18bc00f31fe-85cf6fd0ef555de": {
+			"provider": "sqlserver",
+			"driver": "microsoft",
+			"name": "mgdw-mgsqlmi",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "mgsqlmi.public.48d444e7f69b.database.windows.net",
+				"port": "3342",
+				"database": "mgdw",
+				"url": "jdbc:sqlserver://;serverName=mgsqlmi.public.48d444e7f69b.database.windows.net;port=3342;databaseName=mgdw",
+				"type": "dev",
+				"provider-properties": {
+					"@dbeaver-authentication@": "SQL_SERVER_PASSWORD",
+					"@dbeaver-show-all-schemas@": "false"
+				},
+				"auth-model": "sqlserver_database"
+			}
+		},
+		"azure-18bc00f8afd-ea2bcf673fb870c": {
+			"provider": "sqlserver",
+			"driver": "azure",
+			"name": "mgsqlsrv",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "mgsqlsrv.database.windows.net",
+				"database": "mgdw",
+				"url": "jdbc:sqlserver://;serverName=mgsqlsrv.database.windows.net;databaseName=mgdw;encrypt=true",
+				"type": "dev",
+				"provider-properties": {
+					"@dbeaver-authentication@": "SQL_SERVER_PASSWORD",
+					"@dbeaver-show-all-schemas@": "false"
+				}
+			}
+		},
+		"mysql8-18bc0100242-7e79f825d450f35c": {
+			"provider": "mysql",
+			"driver": "mysql8",
+			"name": "reports11-ingress",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "reports11",
+				"port": "3306",
+				"database": "mysql",
+				"url": "jdbc:mysql://reports11:3306/mysql",
+				"type": "dev",
+				"properties": {
+					"connectTimeout": "20000",
+					"rewriteBatchedStatements": "true",
+					"enabledTLSProtocols": "TLSv1,TLSv1.1,TLSv1.2",
+					"allowPublicKeyRetrieval": "TRUE"
+				},
+				"auth-model": "native"
+			}
+		},
+		"mysql8-18bc0106527-361e44acc55f6be6": {
+			"provider": "mysql",
+			"driver": "mysql8",
+			"name": "reports51-ingress",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "reports51",
+				"port": "3306",
+				"database": "mysql",
+				"url": "jdbc:mysql://reports51:3306/mysql",
+				"type": "dev",
+				"properties": {
+					"connectTimeout": "20000",
+					"rewriteBatchedStatements": "true",
+					"enabledTLSProtocols": "TLSv1,TLSv1.1,TLSv1.2",
+					"allowPublicKeyRetrieval": "TRUE"
+				},
+				"auth-model": "native"
+			}
+		},
+		"mysql8-18bc010b858-59230f868baa0921": {
+			"provider": "mysql",
+			"driver": "mysql8",
+			"name": "reports31",
+			"save-password": true,
+			"read-only": false,
+			"configuration": {
+				"host": "reports31",
+				"port": "30031",
+				"database": "mysql",
+				"url": "jdbc:mysql://reports31:30031/mysql",
+				"type": "dev",
+				"properties": {
+					"connectTimeout": "20000",
+					"rewriteBatchedStatements": "true",
+					"enabledTLSProtocols": "TLSv1,TLSv1.1,TLSv1.2",
+					"allowPublicKeyRetrieval": "TRUE"
+				},
+				"auth-model": "native"
+			}
+		}
+	},
+	"connection-types": {
+		"dev": {
+			"name": "Development",
+			"color": "255,255,255",
+			"description": "Regular development database",
+			"auto-commit": true,
+			"confirm-execute": false,
+			"confirm-data-change": false,
+			"auto-close-transactions": false
+		}
+	}
+}
