@@ -1,0 +1,1 @@
+{"resources":{"Scripts/examples/mssql/join-prev.sql":{"default-datasource":"microsoft-18bc00f31fe-85cf6fd0ef555de","default-catalog":"mgdw","default-schema":"dbo"},"Scripts/sproc/mysql/sproc/Script.sql":{"default-datasource":"mysql8-18bc010b858-59230f868baa0921","default-catalog":"mysql"}}}
