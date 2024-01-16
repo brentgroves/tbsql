@@ -1,212 +1,307 @@
-CREATE DEFINER=`root`@`%` PROCEDURE `Plex`.`account_period_balance_recreate_period_range`(
-	in v_pcn int
+CREATE DEFINER=`ROOT`@`%` PROCEDURE `ARCHIVE`.`ACCOUNT_PERIOD_BALANCE_RECREATE_PERIOD_RANGE_2024_01_15`(
+ IN V_PCN INT
 )
-proc_Exit:begin
-	declare v_start_period int;
-	declare v_end_period int;
-	declare v_period int;
-	declare v_max_fiscal_period int;
-	declare v_no_update int;
-	
-	declare v_prev_period int;
+PROC_EXIT:BEGIN
+ DECLARE V_START_PERIOD INT;
 
-	declare v_first_period int;
-	declare v_anchor_period int;
-	declare v_anchor_period_display varchar(7);
-	
-	declare v_cnt int;
-
-	select r.start_period,r.start_period,r.end_period,r.no_update,m.max_fiscal_period 
-	into v_start_period,v_period,v_end_period,v_no_update,v_max_fiscal_period
-	from Plex.accounting_period_ranges r
-	inner join Plex.max_fiscal_period_view m 
-	on r.pcn=m.pcn
-	and (r.start_period div 100) = m.`year`
-	where r.pcn = v_pcn;
-
-	if (v_no_update=1) then
-
- 		LEAVE proc_Exit;
-	end if;
-
-	if ((v_start_period%100)!=1) then
-		set v_prev_period = v_start_period - 1;
-	else
-		set v_prev_period = (((v_start_period div 100)-1)*100)+12;
-	end if;
-
-
-	set v_anchor_period=v_prev_period;
-
-	select p.period_display into v_anchor_period_display
-	from Plex.accounting_period p 
-	where p.pcn = v_pcn
-	and p.period = v_anchor_period
-	and p.ordinal = 1;
-	
-	if v_period%100 = 1 then
-		set v_first_period=1;
-	else 
-		set v_first_period=0;
-	end if;
-
-
-	
-	INSERT INTO Plex.accounting_account_year_category_type ( pcn,account_no,`year`,category_type,revenue_or_expense)
-	with account_year_category_type
-	as
-	(
-		select a.*
-		
-		from Plex.accounting_account a  
-		inner join Plex.accounting_account_year_category_type y
-		on a.pcn = y.pcn 
-		and a.account_no =y.account_no
-		where y.`year` = (v_prev_period div 100) 
-		and a.pcn = v_pcn
+DECLARE
+	V_END_PERIOD INT;
+ -- Bug fix need end_open_period in case account gets added in January and Dec of previous year is closed but January is open.
+	DECLARE      V_END_OPEN_PERIOD INT;
+	DECLARE      V_PERIOD INT;
+	DECLARE      V_MAX_FISCAL_PERIOD INT;
+	DECLARE      V_NO_UPDATE INT;
+	DECLARE      V_PREV_PERIOD INT;
+	DECLARE      V_FIRST_PERIOD INT;
+	DECLARE      V_ANCHOR_PERIOD INT;
+	DECLARE      V_ANCHOR_PERIOD_DISPLAY VARCHAR(7);
+	DECLARE      V_CNT INT;
+	SELECT       R.START_PERIOD, R.START_PERIOD, R.END_PERIOD, R.END_OPEN_PERIOD, R.NO_UPDATE, M.MAX_FISCAL_PERIOD INTO V_START_PERIOD, V_PERIOD, V_END_PERIOD, V_END_OPEN_PERIOD, V_NO_UPDATE, V_MAX_FISCAL_PERIOD FROM PLEX.ACCOUNTING_PERIOD_RANGES R INNER JOIN PLEX.MAX_FISCAL_PERIOD_VIEW M ON R.PCN=M.PCN AND (R.START_PERIOD DIV 100) = M.`YEAR` WHERE R.PCN = V_PCN;
+	IF           (V_NO_UPDATE=1) THEN
+		LEAVE PROC_EXIT;
+	END IF;
+	IF           ((V_START_PERIOD%100)!=1) THEN
+		SET V_PREV_PERIOD = V_START_PERIOD - 1;
+		ELSE         SET V_PREV_PERIOD = (((V_START_PERIOD DIV 100)-1)*100)+12;
+	END IF;
+	SET          V_ANCHOR_PERIOD=V_PREV_PERIOD;
+	SELECT       P.PERIOD_DISPLAY INTO V_ANCHOR_PERIOD_DISPLAY FROM PLEX.ACCOUNTING_PERIOD P WHERE P.PCN = V_PCN AND P.PERIOD = V_ANCHOR_PERIOD AND P.ORDINAL = 1;
+	IF           V_PERIOD%100 = 1 THEN
+		SET V_FIRST_PERIOD=1;
+		ELSE         SET V_FIRST_PERIOD=0;
+	END IF;
+	SET          @ENABLED = TRUE;
+	SET          @STR = CONCAT_WS('', 'v_start_period:', V_START_PERIOD);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_prev_period:', V_PREV_PERIOD);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_period:', V_PERIOD);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_end_period:', V_END_PERIOD);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_end_open_period:', V_END_OPEN_PERIOD);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_no_update:', V_NO_UPDATE);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_max_fiscal_period:', V_MAX_FISCAL_PERIOD);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_first_period:', V_FIRST_PERIOD);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_anchor_period:', V_ANCHOR_PERIOD);
+	SET          @STR = CONCAT_WS('', @STR, '#', 'v_anchor_period_display:', V_ANCHOR_PERIOD_DISPLAY);
+	CALL         DEBUG_MSG(@ENABLED, @STR);
+ --   call debug_msg(@enabled, 'my first debug message');
+ --   call debug_msg(@enabled, (select concat_ws('','arg1:', v_first_period)));
+ --   call debug_msg(TRUE, 'This message always shows up');
+ --   call debug_msg(FALSE, 'This message will never show up');
+ -- select * from Plex.accounting_account_year_category_type y
+ -- where y.account_no = "11055-000-9806"
+ -- 7074364	123681	11055-000-9806	2024	Asset	0
+ -- 7078986	123681	11055-000-9806	2025	Asset	0
+	INSERT       INTO PLEX.ACCOUNTING_ACCOUNT_YEAR_CATEGORY_TYPE ( PCN, ACCOUNT_NO, `YEAR`, CATEGORY_TYPE, REVENUE_OR_EXPENSE) WITH ACCOUNT_YEAR_CATEGORY_TYPE_PREV_PERIOD AS (
+		SELECT
+			A.*
+		FROM
+			PLEX.ACCOUNTING_ACCOUNT A
+			INNER JOIN PLEX.ACCOUNTING_ACCOUNT_YEAR_CATEGORY_TYPE Y
+			ON A.PCN = Y.PCN
+			AND A.ACCOUNT_NO =Y.ACCOUNT_NO
+		WHERE
+			Y.`YEAR` = (V_PREV_PERIOD DIV 100)
+			AND A.PCN = V_PCN
+	), ADD_ACCOUNT_YEAR_CATEGORY_TYPE_PREV_PERIOD AS (
+		SELECT
+			A.*
+		FROM
+			PLEX.ACCOUNTING_ACCOUNT A
+			LEFT OUTER JOIN ACCOUNT_YEAR_CATEGORY_TYPE_PREV_PERIOD Y
+			ON A.PCN = Y.PCN
+			AND A.ACCOUNT_NO = Y.ACCOUNT_NO
+		WHERE
+			Y.PCN IS NULL
+			AND A.PCN = V_PCN
 	)
-	,add_account_year_category_type
-	as 
-	( 
-		select a.*
-		from Plex.accounting_account a  
-		left outer join account_year_category_type y 
-		on a.pcn = y.pcn 
-		and a.account_no = y.account_no
-		where y.pcn is null 
-		and a.pcn = v_pcn
+	SELECT
+		Y.PCN,
+		Y.ACCOUNT_NO,
+		(V_PREV_PERIOD DIV 100) YEAR,
+		Y.CATEGORY_TYPE,
+		Y.REVENUE_OR_EXPENSE
+	FROM
+		PLEX.ACCOUNTING_ACCOUNT_YEAR_CATEGORY_TYPE Y
+	WHERE
+		Y.YEAR = (V_END_OPEN_PERIOD DIV 100)
+		AND Y.PCN = V_PCN
+		AND Y.ACCOUNT_NO IN (
+			SELECT
+				ACCOUNT_NO
+			FROM
+				ADD_ACCOUNT_YEAR_CATEGORY_TYPE_PREV_PERIOD
+		);
+	INSERT       INTO PLEX.ACCOUNTING_ACCOUNT_YEAR_CATEGORY_TYPE ( PCN, ACCOUNT_NO, `YEAR`, CATEGORY_TYPE, REVENUE_OR_EXPENSE) WITH ACCOUNT_YEAR_CATEGORY_TYPE_END_PERIOD AS (
+		SELECT
+			A.*
+		FROM
+			PLEX.ACCOUNTING_ACCOUNT A
+			INNER JOIN PLEX.ACCOUNTING_ACCOUNT_YEAR_CATEGORY_TYPE Y
+			ON A.PCN = Y.PCN
+			AND A.ACCOUNT_NO =Y.ACCOUNT_NO
+		WHERE
+			Y.`YEAR` = (V_END_PERIOD DIV 100)
+			AND A.PCN = V_PCN
+	), ADD_ACCOUNT_YEAR_CATEGORY_TYPE_END_PERIOD AS (
+		SELECT
+			A.*
+		FROM
+			PLEX.ACCOUNTING_ACCOUNT A
+			LEFT OUTER JOIN ACCOUNT_YEAR_CATEGORY_TYPE_END_PERIOD Y
+			ON A.PCN = Y.PCN
+			AND A.ACCOUNT_NO = Y.ACCOUNT_NO
+		WHERE
+			Y.PCN IS NULL
+			AND A.PCN = V_PCN
 	)
-	select y.pcn,y.account_no,v_prev_period div 100,y.category_type,y.revenue_or_expense
-	from Plex.accounting_account_year_category_type y
-	where y.year = (v_end_period div 100) 
-	and y.pcn = v_pcn
-	and y.account_no in 
-	( 
-		select account_no from add_account_year_category_type
-	);
-    
-
-    insert into Plex.account_period_balance 
-	    select 
-	    v_pcn pcn,
-	    a.account_no,
-	    v_anchor_period period,
-	    v_anchor_period_display period_display,
-	    0 debit,
-	    0 ytd_debit,
-	    0 credit,
-	    0 ytd_credit,
-	    0 balance,
-	    0 ytd_balance
-	    
-	    
-	    
-		from Plex.accounting_account a   
-		left outer join Plex.account_period_balance b 
-		on a.pcn=b.pcn 
-		and a.account_no=b.account_no 
-		and b.period = v_anchor_period  
-		where a.pcn = v_pcn 
-		and b.pcn is null;
-
-   	while v_period <= v_end_period do
-		
-		insert into Plex.account_period_balance (pcn,account_no,period,period_display,debit,ytd_debit,credit,ytd_credit,balance,ytd_balance)
-   		with period_balance(pcn,account_no,period,debit,credit,balance)
-		as 
-		(
-		    select 
-		    a.pcn,
-		    a.account_no,
-			v_period period,
-			case 
-			when b.debit is null then 0 
-			else b.debit 
-			end debit,
-			case 
-			when b.credit is null then 0 
-			else b.credit 
-			end credit,
-			case 
-			when b.balance is null then 0 
-			else b.balance 
-			end balance
-			from Plex.accounting_account a   
-			left outer join Plex.accounting_balance b 
-			on a.pcn=b.pcn 
-			and a.account_no=b.account_no 
-			and b.period = v_period
-			where a.pcn = v_pcn  
-			order by a.pcn,a.account_no,b.period  
-		)
-		
-		,account_period_balance(pcn,account_no,period,period_display,debit,ytd_debit,credit,ytd_credit,balance,ytd_balance)
-		as 
-		(	
-			select b.pcn,b.account_no,b.period,ap.period_display, 
-			b.debit,
-			cast(
-			    case 
-			    when (v_first_period=0) then p.ytd_debit + b.debit 
-			    when (v_first_period=1) and (a.revenue_or_expense = 1) then b.debit 
-			    when (v_first_period=1) and (a.revenue_or_expense = 0) then p.ytd_debit + b.debit 
-			    end as decimal(19,5) 
-			) ytd_debit, 
-			b.credit,
-		  	cast(
-			    case 
-			    when (v_first_period=0) then p.ytd_credit + b.credit 
-			    when (v_first_period=1) and (a.revenue_or_expense = 1) then b.credit 
-			    when (v_first_period=1) and (a.revenue_or_expense = 0) then p.ytd_credit + b.credit 
-			    end as decimal(19,5) 
-		  	) ytd_credit, 
-			b.balance,
-			cast(
-			    case 
-			    when (v_first_period=0) then p.ytd_balance + b.balance 
-			    when (v_first_period=1) and (a.revenue_or_expense = 1) then b.balance 
-			    when (v_first_period=1) and (a.revenue_or_expense = 0) then p.ytd_balance + b.balance 
-			    end as decimal(19,5) 
-			) ytd_balance
-			from period_balance b  
-			inner join Plex.account_period_balance p
-			on b.pcn = p.pcn 
-			and b.account_no = p.account_no 
-			and b.period = v_period
-			and p.period = v_prev_period
-			inner join Plex.accounting_account_year_category_type a
-			on b.pcn = a.pcn 
-			and b.account_no =a.account_no
-			and a.`year`=(v_prev_period div 100)
-			inner join Plex.accounting_period ap 
-			on b.pcn=ap.pcn 
-			and b.period=ap.period 
-			and ap.ordinal = 1
-
-		)
-		select pcn,account_no,period,period_display,debit,ytd_debit,credit,ytd_credit,balance,ytd_balance 
-		from account_period_balance;
-
-		
-		set v_prev_period = v_period;
-		
-	    if v_period < v_max_fiscal_period then
-		    set v_period=v_period+1;
-		else 
-			set v_period=((v_period div 100 + 1)*100) + 1; 
-		end if; 
-		select m.max_fiscal_period into v_max_fiscal_period
-		from Plex.max_fiscal_period_view m 
-		where m.pcn = v_pcn 
-		and m.`year` = v_period div 100;
-	
-		if v_period%100 = 1 then  
-			set v_first_period=1;
-		else 
-			set v_first_period=0;
-		end if;
-    	
-	
-	end while;	
-	
-end;
+	SELECT
+		Y.PCN,
+		Y.ACCOUNT_NO,
+		(V_END_PERIOD DIV 100) YEAR,
+		Y.CATEGORY_TYPE,
+		Y.REVENUE_OR_EXPENSE
+	FROM
+		PLEX.ACCOUNTING_ACCOUNT_YEAR_CATEGORY_TYPE Y
+	WHERE
+		Y.YEAR = (V_END_OPEN_PERIOD DIV 100)
+		AND Y.PCN = V_PCN
+		AND Y.ACCOUNT_NO IN (
+			SELECT
+				ACCOUNT_NO
+			FROM
+				ADD_ACCOUNT_YEAR_CATEGORY_TYPE_END_PERIOD
+		);
+	INSERT       INTO PLEX.ACCOUNT_PERIOD_BALANCE
+	SELECT
+		V_PCN PCN,
+		A.ACCOUNT_NO,
+		V_ANCHOR_PERIOD PERIOD,
+		V_ANCHOR_PERIOD_DISPLAY PERIOD_DISPLAY,
+		0 DEBIT,
+		0 YTD_DEBIT,
+		0 CREDIT,
+		0 YTD_CREDIT,
+		0 BALANCE,
+		0 YTD_BALANCE
+	FROM
+		PLEX.ACCOUNTING_ACCOUNT A
+		LEFT OUTER JOIN PLEX.ACCOUNT_PERIOD_BALANCE B
+		ON A.PCN=B.PCN
+		AND A.ACCOUNT_NO=B.ACCOUNT_NO
+		AND B.PERIOD = V_ANCHOR_PERIOD
+	WHERE
+		A.PCN = V_PCN
+		AND B.PCN IS NULL;
+ -- select *
+ -- from Plex.account_period_balance b
+ -- where b.account_no = "11055-000-9806"
+ --
+ -- pcn		account_no		period	period_display	debit	ytd_debit	credit	ytd_credit	balance	ytd_balance
+ -- 123681	11055-000-9806	202212	12-2022			0.00000	0.00000		0.00000	0.00000		0.00000	0.00000
+ -- 123681	11055-000-9806	202311	11-2023			0.00000	0.00000		0.00000	0.00000		0.00000	0.00000
+	WHILE        V_PERIOD <= V_END_PERIOD DO
+ -- no_update	pcn		anchor_period	anchor_period_display	period	prev_period	start_period	first_period	end_period	period	max_fiscal_period
+ -- 0			123681	202212			12-2022					202301	202212		202301			1				202311		202301	202312
+	INSERT INTO PLEX.ACCOUNT_PERIOD_BALANCE (
+		PCN,
+		ACCOUNT_NO,
+		PERIOD,
+		PERIOD_DISPLAY,
+		DEBIT,
+		YTD_DEBIT,
+		CREDIT,
+		YTD_CREDIT,
+		BALANCE,
+		YTD_BALANCE
+	) WITH PERIOD_BALANCE(
+		PCN,
+		ACCOUNT_NO,
+		PERIOD,
+		DEBIT,
+		CREDIT,
+		BALANCE
+	) AS (
+		SELECT
+			A.PCN,
+			A.ACCOUNT_NO,
+			V_PERIOD PERIOD,
+			CASE
+				WHEN B.DEBIT IS NULL THEN
+					0
+				ELSE
+					B.DEBIT
+			END DEBIT,
+			CASE
+				WHEN B.CREDIT IS NULL THEN
+					0
+				ELSE
+					B.CREDIT
+			END CREDIT,
+			CASE
+				WHEN B.BALANCE IS NULL THEN
+					0
+				ELSE
+					B.BALANCE
+			END BALANCE
+		FROM
+			PLEX.ACCOUNTING_ACCOUNT A
+			LEFT OUTER JOIN PLEX.ACCOUNTING_BALANCE B
+			ON A.PCN=B.PCN
+			AND A.ACCOUNT_NO=B.ACCOUNT_NO
+			AND B.PERIOD = V_PERIOD
+		WHERE
+			A.PCN = V_PCN
+		ORDER BY
+			A.PCN,
+			A.ACCOUNT_NO,
+			B.PERIOD
+	), ACCOUNT_PERIOD_BALANCE(
+		PCN,
+		ACCOUNT_NO,
+		PERIOD,
+		PERIOD_DISPLAY,
+		DEBIT,
+		YTD_DEBIT,
+		CREDIT,
+		YTD_CREDIT,
+		BALANCE,
+		YTD_BALANCE
+	) AS (
+		SELECT
+			B.PCN,
+			B.ACCOUNT_NO,
+			B.PERIOD,
+			AP.PERIOD_DISPLAY,
+			B.DEBIT,
+			CAST(
+				CASE
+					WHEN (V_FIRST_PERIOD=0) THEN
+						P.YTD_DEBIT + B.DEBIT
+					WHEN (V_FIRST_PERIOD=1) AND (A.REVENUE_OR_EXPENSE = 1) THEN
+						B.DEBIT
+					WHEN (V_FIRST_PERIOD=1) AND (A.REVENUE_OR_EXPENSE = 0) THEN
+						P.YTD_DEBIT + B.DEBIT
+				END AS DECIMAL(19,
+			5) ) YTD_DEBIT,
+			B.CREDIT,
+			CAST(
+				CASE
+					WHEN (V_FIRST_PERIOD=0) THEN
+						P.YTD_CREDIT + B.CREDIT
+					WHEN (V_FIRST_PERIOD=1) AND (A.REVENUE_OR_EXPENSE = 1) THEN
+						B.CREDIT
+					WHEN (V_FIRST_PERIOD=1) AND (A.REVENUE_OR_EXPENSE = 0) THEN
+						P.YTD_CREDIT + B.CREDIT
+				END AS DECIMAL(19,
+			5) ) YTD_CREDIT,
+			B.BALANCE,
+			CAST(
+				CASE
+					WHEN (V_FIRST_PERIOD=0) THEN
+						P.YTD_BALANCE + B.BALANCE
+					WHEN (V_FIRST_PERIOD=1) AND (A.REVENUE_OR_EXPENSE = 1) THEN
+						B.BALANCE
+					WHEN (V_FIRST_PERIOD=1) AND (A.REVENUE_OR_EXPENSE = 0) THEN
+						P.YTD_BALANCE + B.BALANCE
+				END AS DECIMAL(19,
+			5) ) YTD_BALANCE
+		FROM
+			PERIOD_BALANCE B
+			INNER JOIN PLEX.ACCOUNT_PERIOD_BALANCE P
+			ON B.PCN = P.PCN
+			AND B.ACCOUNT_NO = P.ACCOUNT_NO
+			AND B.PERIOD = V_PERIOD
+			AND P.PERIOD = V_PREV_PERIOD
+			INNER JOIN PLEX.ACCOUNTING_ACCOUNT_YEAR_CATEGORY_TYPE A
+			ON B.PCN = A.PCN
+			AND B.ACCOUNT_NO =A.ACCOUNT_NO
+			AND A.`YEAR`=(V_PREV_PERIOD DIV 100)
+			INNER JOIN PLEX.ACCOUNTING_PERIOD AP
+			ON B.PCN=AP.PCN
+			AND B.PERIOD=AP.PERIOD
+			AND AP.ORDINAL = 1
+	)
+		SELECT
+			PCN,
+			ACCOUNT_NO,
+			PERIOD,
+			PERIOD_DISPLAY,
+			DEBIT,
+			YTD_DEBIT,
+			CREDIT,
+			YTD_CREDIT,
+			BALANCE,
+			YTD_BALANCE
+		FROM
+			ACCOUNT_PERIOD_BALANCE;
+	SET          V_PREV_PERIOD = V_PERIOD;
+	IF           V_PERIOD < V_MAX_FISCAL_PERIOD THEN
+		SET V_PERIOD=V_PERIOD+1;
+		ELSE         SET V_PERIOD=((V_PERIOD DIV 100 + 1)*100) + 1;
+	END IF;
+	SELECT       M.MAX_FISCAL_PERIOD INTO V_MAX_FISCAL_PERIOD FROM PLEX.MAX_FISCAL_PERIOD_VIEW M WHERE M.PCN = V_PCN AND M.`YEAR` = V_PERIOD DIV 100;
+	IF           V_PERIOD%100 = 1 THEN
+		SET V_FIRST_PERIOD=1;
+		ELSE         SET V_FIRST_PERIOD=0;
+	END IF;
+END WHILE;
+END;
